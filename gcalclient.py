@@ -74,7 +74,7 @@ class GCalClient:
                 events_result = service.events().list(
                         calendarId=self.calendarId,  \
                         timeMin=now,  \
-                        maxResults=4, singleEvents=True,\
+                        maxResults=10, singleEvents=True,\
                         orderBy='startTime').execute()
                 
                 events = events_result.get('items', [])

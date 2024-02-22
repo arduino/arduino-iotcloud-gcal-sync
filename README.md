@@ -51,7 +51,7 @@ The configuration file "calendar_credentials.json" will be used to connect to Go
 Each calendar in Google Calendar that needs to be configured in order to give edit rights to the same service account.
 
 Additionally, we need to inform the program of which rooms we want to monitor and how to connect to Arduino IoTCloud.
-For this prupose, create a file "config.json" with the following structure:
+For this purpose, create a file "config.json" with the following structure:
 
 ```
 
@@ -75,13 +75,7 @@ Both calendar_credentials.json and config.json files must be stored in Cloud Sto
 The program also uses another bucket "/roomcal-watch-ids" (that can be created empty) to store all resource identifiers that Google Calendar assigns when a notification channel is created on a calendar. In this way, those resource ids can be used later on if the notification must be disabled.
 
 
-## REST service
-
-* GET /meetings  - returns JSON object representing room status with next two meetings
-required parameters:
-* Authorization header "Authorization: Bearer ---YOUR IOTCLOUD CLIENT SECRET HERE---"
-* URL param: client_id   (from IoTCloud)
-* URL param: room_name
+## REST service exposed by gcalwatch
 
 * POST /meetings  - creates new meeting starting now 
     ** start time is rounded to 15 mins slots
@@ -96,3 +90,14 @@ required parameters:
 }
 ``
 * optional parameter: duration_mins (in POST json body as well), defaults to 60 mins
+
+* DELETE /meeting/<id>  - deletes a meeting with specified ID
+required parameters:
+* Authorization header "Authorization: Bearer ---YOUR IOTCLOUD CLIENT SECRET HERE---"
+* Required JSON POST body:
+``
+{
+    "room_name":"blue_room",
+    "client_id":"---YOUR IOTCLOUD CLIENT ID HERE---"
+}
+`` 
