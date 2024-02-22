@@ -78,26 +78,30 @@ The program also uses another bucket "/roomcal-watch-ids" (that can be created e
 ## REST service exposed by gcalwatch
 
 * POST /meetings  - creates new meeting starting now 
-    ** start time is rounded to 15 mins slots
-    ** returns 201 if created successfully, or proper error code otherwise
+** start time is rounded to 15 mins slots
+** returns 201 if created successfully, or proper error code otherwise
 required parameters:
-* Authorization header "Authorization: Bearer ---YOUR IOTCLOUD CLIENT SECRET HERE---"
-* Required JSON POST body:
-``
+** Authorization header "Authorization: Bearer ---YOUR IOTCLOUD CLIENT SECRET HERE---"
+** optional parameter: duration_mins (in POST json body as well), defaults to 60 mins
+** Required JSON POST body:
+```
+
 {
     "room_name":"blue_room",
     "client_id":"---YOUR IOTCLOUD CLIENT ID HERE---"
 }
-``
-* optional parameter: duration_mins (in POST json body as well), defaults to 60 mins
+
+```
 
 * DELETE /meeting/<id>  - deletes a meeting with specified ID
 required parameters:
-* Authorization header "Authorization: Bearer ---YOUR IOTCLOUD CLIENT SECRET HERE---"
-* Required JSON POST body:
-``
+** Authorization header "Authorization: Bearer ---YOUR IOTCLOUD CLIENT SECRET HERE---"
+** Required JSON POST body:
+```
+
 {
     "room_name":"blue_room",
     "client_id":"---YOUR IOTCLOUD CLIENT ID HERE---"
 }
-`` 
+
+``` 
