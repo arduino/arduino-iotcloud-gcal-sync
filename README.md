@@ -93,7 +93,7 @@ required parameters:
 
 ```
 
-### DELETE /meeting/<id>  - deletes a meeting with specified ID
+### DELETE /meeting/ID  - deletes a meeting with specified ID
 required parameters:
 * Authorization header "Authorization: Bearer ---YOUR IOTCLOUD CLIENT SECRET HERE---"
 * Required JSON POST body:
