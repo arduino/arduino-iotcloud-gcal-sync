@@ -57,7 +57,7 @@ def receiver_task(cm,cond):
     # Initialize the Publisher client
     projectid = creds.project_id
     subscriber = pubsub_v1.SubscriberClient(credentials=creds)
-    subscription_path = "projects/"+projectid+"/subscriptions/rc_events-sub"
+    subscription_path = "projects/"+projectid+"/subscriptions/roomcalendar_events-sub"
     subscriber.subscribe(subscription_path, callback=callback)
     logger.info(f"Subscribed to messages from {subscription_path}")
     while True:

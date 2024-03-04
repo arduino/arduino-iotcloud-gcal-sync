@@ -13,7 +13,7 @@ import mylogger
 import sys
 from time import time,sleep
 
-BUCKET_NAME = "roomcal-config"
+BUCKET_NAME = "roomcalendar-config"
 
 SCOPES = ['https://www.googleapis.com/auth/pubsub',
         'https://www.googleapis.com/auth/devstorage.read_write',
@@ -108,7 +108,6 @@ class GCalClient:
         result.valid = True
         if not events:
             logger.debug('No upcoming events found.')
-            result.valid = False 
             return result
 
         # Fetches the first 2 events

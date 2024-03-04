@@ -18,7 +18,7 @@ import requests
 logger = mylogger.getlogger(__name__)
 
 
-BUCKET_NAME = "roomcal-config"
+BUCKET_NAME = "roomcalendar-config"
 SCOPES = ['https://www.googleapis.com/auth/pubsub',
         'https://www.googleapis.com/auth/devstorage.read_write',
         'https://www.googleapis.com/auth/calendar',
@@ -137,7 +137,11 @@ def watch_and_update_iot():
                             logger.debug(gcal_room_status)
                             iot_room_status = iotc.get_room_status_retry(room_name)
                             logger.debug(iot_room_status)
-                            update_if_needed(iotc,room_name,iot_room_status,gcal_room_status)
+                            if not iot_room_status.is_valid():
+                                logger.error("Could not retrieve valid iotcloud status for room "+room_name)
+                            else:
+                                #all valid, check for update
+                                update_if_needed(iotc,room_name,iot_room_status,gcal_room_status)
                             
                         
                         if wakeupcall["reason"]==cm.REASON_REGULAR:
@@ -160,7 +164,13 @@ def watch_and_update_iot():
                                 logger.debug(gcal_room_status)
                                 iot_room_status = iotc.get_room_status_retry(room_name)
                                 logger.debug(iot_room_status)
-                                update_if_needed(iotc,room_name,iot_room_status,gcal_room_status)
+                                if not gcal_room_status.is_valid():
+                                    logger.error("Could not retrieve valid calendar status for room "+room_name)
+                                elif not iot_room_status.is_valid():
+                                    logger.error("Could not retrieve valid iotcloud status for room "+room_name)
+                                else:
+                                    #all valid, check for update
+                                    update_if_needed(iotc,room_name,iot_room_status,gcal_room_status)
                     else :
                         done_processing=True
                 cm.releaseLock()

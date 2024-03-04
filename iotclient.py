@@ -19,7 +19,7 @@ from time import sleep
 logger = mylogger.getlogger(__name__)
 
 MAX_ATTEMPTS=3
-RETRY_DELAY_IOT=2  #avoids exceeding API rate limiting
+RETRY_DELAY_IOT=3  #avoids exceeding API rate limiting
  
 
 class IotClient:
@@ -80,6 +80,7 @@ class IotClient:
 
 
     def get_room_status_retry(self,room_name):
+        sleep(RETRY_DELAY_IOT)
         roomstatus_iot=self.get_room_status(room_name)
         attempts = 1
         while(roomstatus_iot.is_valid()==False and attempts<MAX_ATTEMPTS):

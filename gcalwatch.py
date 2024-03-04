@@ -21,10 +21,10 @@ SCOPES = ['https://www.googleapis.com/auth/calendar',
         'https://www.googleapis.com/auth/pubsub']
  
 
-BUCKET_NAME = "roomcal-watch-ids"
-CONFIG_BUCKET_NAME="roomcal-config"
+BUCKET_NAME = "roomcalendar-watch-ids"
+CONFIG_BUCKET_NAME="roomcalendar-config"
 TOPIC_NAME="roomcalendar_events"
-WATCH_ID="gcalwatch_v4"
+WATCH_ID="gcalwatch_v5"
 
 app = Flask(__name__)
 
@@ -202,8 +202,13 @@ def startwatching():
     watch_url=config.get("gcal_watch_function_url","")+"/webhook"
     #first, stop any existing watch created by this function to avoid double watching
     ids = read_watch_resourceid(storage_client,room_name)
-    if "resource_id" in ids:
-        unwatch_calendar(calendar_client,ids["watch_id"],ids["resource_id"])
+    try:
+        #try unwatching
+        if "resource_id" in ids:
+            logger.info("Stopping to watch "+ids["watch_id"]+":"+ids["resource_id"])
+            unwatch_calendar(calendar_client,ids["watch_id"],ids["resource_id"])
+    except Exception as e:
+        logger.warn("Not able to unwatch calendar "+room_name)
 
     #now setup a watch for this calendar
     response = watch_calendar(calendar_client,calendar_id,watch_url)
