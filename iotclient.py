@@ -80,7 +80,7 @@ class IotClient:
 
 
     def get_room_status_retry(self,room_name):
-        sleep(RETRY_DELAY_IOT)
+        sleep(1)
         roomstatus_iot=self.get_room_status(room_name)
         attempts = 1
         while(roomstatus_iot.is_valid()==False and attempts<MAX_ATTEMPTS):
@@ -110,7 +110,7 @@ class IotClient:
                         properties=properties_api.properties_v2_list(path_params={'id': thing["id"]})  
                 room.valid=True
             else:
-                logger.warn("IoT API returned status "+things.response.status)
+                logger.error("IoT API returned status "+things.response.status)
                 room.valid=False
         except ApiException as e:
             room.valid=False 
@@ -119,7 +119,7 @@ class IotClient:
 
         if room.name!=room_name:
             #didn't find any thing with this room name
-            logger.warn(f"Did not find thing corresponding to room: {room_name}")
+            logger.info(f"Did not find thing corresponding to room: {room_name}")
             room.valid=False
             return room
 
@@ -239,6 +239,6 @@ class IotClient:
             params["id"]=tid
             params["pid"]=pid
             properties_api.properties_v2_publish( path_params=params, body={'value':value} )
-            sleep(RETRY_DELAY_IOT)
+            sleep(1)
         except ApiException as e:
             logger.error("IOTCLIENT: Error in update_property: {}".format(e))

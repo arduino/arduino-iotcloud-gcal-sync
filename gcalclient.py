@@ -98,6 +98,7 @@ class GCalClient:
         if not events:
             logger.debug('No upcoming events found.')
             result.valid = False 
+            result.name = self.room_name
             return result
         result = self.get_calendar_status_from_events(events)
         return result
@@ -106,12 +107,13 @@ class GCalClient:
     def get_calendar_status_from_events(self,events):
         result = RoomStatus()
         result.valid = True
+        result.name=self.room_name
+        
         if not events:
             logger.debug('No upcoming events found.')
             return result
 
         # Fetches the first 2 events
-        result.name=self.room_name
         evno = 0
         organizer = ""
         eventid = ""

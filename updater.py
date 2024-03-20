@@ -52,10 +52,12 @@ def update_if_needed(iotc,room_name,iot_room_status,gcal_room_status):
                 #leave some time for property propagation
                 sleep(5)
                 iot_room_status = iotc.get_room_status_retry(room_name) 
+                logger.debug(gcal_room_status)
+                logger.debug(iot_room_status)
                 if iot_room_status.is_valid() and iot_room_status==gcal_room_status:
                     updateok = True
                 else:
-                    logger.info("Retrying update, still not OK")
+                    logger.info("Retrying update, still not OK "+str(iot_room_status.is_valid()))
                     attempts=attempts+1
             if not updateok:
                 logger.info("Unable to perform update after multiple attempts, stopping")
