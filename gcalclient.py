@@ -22,7 +22,6 @@ SCOPES = ['https://www.googleapis.com/auth/pubsub',
 
 logger = mylogger.getlogger(__name__)
 
-
 RETRY_DELAY_GCAL = 1
 MAX_ATTEMPTS=3
 
@@ -71,7 +70,7 @@ class GCalClient:
                 logger.info('Getting the upcoming events')
                 service=self.get_gcalclient()
                 now = datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time    
-                events_result = service.events().list(
+                events_result = service.events().list( 
                         calendarId=self.calendarId,  \
                         timeMin=now,  \
                         maxResults=10, singleEvents=True,\

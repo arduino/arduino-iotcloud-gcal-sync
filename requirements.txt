@@ -1,12 +1,11 @@
-Flask==2.0.2
-gunicorn==20.1.0
+Flask~=3.1.0
+gunicorn~=23.0.0
 requests-oauthlib
-arduino-iot-client==2.0.1
-google-api-python-client 
-google-auth-httplib2 
+arduino-iot-client~=2.0.1
+google-api-python-client
+google-auth-httplib2
 google-auth-oauthlib
 google-cloud-storage
-Werkzeug==2.2.2
-frozendict ~= 2.3.4
+frozendict~=2.4.0
 typing_extensions
 google-cloud-pubsub
