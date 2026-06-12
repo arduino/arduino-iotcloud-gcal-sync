@@ -20,7 +20,7 @@ class CalendarMap:
 
     def popWakeup(self):
         if self.wakeup_events:
-            return self.wakeup_events.pop() 
+            return self.wakeup_events.pop(0)  #FIFO: process wakeups in arrival order
         else:
             return {}
     

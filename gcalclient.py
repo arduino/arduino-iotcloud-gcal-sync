@@ -36,6 +36,16 @@ class GCalClient:
         self._service = None
 
 
+    def parse_event_dt(self,value):
+        #timed events use RFC3339 dateTime; all-day events use a date-only value.
+        #parse both, returning a timezone-aware datetime (UTC midnight for all-day).
+        try:
+            return datetime.strptime(value,"%Y-%m-%dT%H:%M:%S%z")
+        except ValueError:
+            d = datetime.strptime(value,"%Y-%m-%d")
+            return d.replace(tzinfo=timezone.utc)
+
+
     def set_nextev_dates(self,startd,endd,tomorrow,result):
         #utility to set next events dates in right format
         #if it's within the day use only H:M otherwise put day in front
@@ -65,11 +75,11 @@ class GCalClient:
         events=()
         attempts = 1
         retrievedok = False
-        while(not retrievedok and attempts<MAX_ATTEMPTS):
+        while(not retrievedok and attempts<=MAX_ATTEMPTS):
             try:
                 logger.info('Getting the upcoming events')
                 service=self.get_gcalclient()
-                now = datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time    
+                now = datetime.now(timezone.utc).isoformat()  # RFC3339 UTC
                 events_result = service.events().list( 
                         calendarId=self.calendarId,  \
                         timeMin=now,  \
@@ -136,8 +146,8 @@ class GCalClient:
                     summary = event["summary"]
             logger.debug(f"Event summary {summary} status: {status}")
 
-            startd=datetime.strptime(start,"%Y-%m-%dT%H:%M:%S%z")
-            endd=datetime.strptime(end,"%Y-%m-%dT%H:%M:%S%z")
+            startd=self.parse_event_dt(start)
+            endd=self.parse_event_dt(end)
 
             tomorrow = datetime.now(timezone.utc) \
                         .replace(hour=0, minute=0, second=0, microsecond=0) \
@@ -214,7 +224,7 @@ class GCalClient:
 
     def insert_instantmeeting(self,duration_mins):
         #https://developers.google.com/calendar/api/v3/reference/events/insert#examples
-        startdt = datetime.utcnow()
+        startdt = datetime.now(timezone.utc)
         mins = startdt.minute
         #round minutes to 00,15,30,45
         mins = mins - (mins % 15)

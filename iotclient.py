@@ -52,9 +52,15 @@ class IotClient:
         self.client_secret=client_secret
         self.org_id=org_id
         self._thingid_cache = {}  # room_name -> thingid
+        self._token = None
+        self._token_expiry = 0
 
 
     def get_token(self):
+        now = time.time()
+        #reuse cached token until shortly before expiry to avoid refetching every call
+        if self._token is not None and now < self._token_expiry:
+            return self._token
         start = time.time()
         oauth_client = BackendApplicationClient(client_id=self.client_id)
         oauth = OAuth2Session(client=oauth_client)
@@ -66,6 +72,9 @@ class IotClient:
             audience=self.HOST
         )
         logger.debug("Token retrieval took secs=" +str(time.time()-start))
+        expires_in = token.get("expires_in", 300)
+        self._token = token
+        self._token_expiry = now + expires_in - 30  #30s safety margin
         return token
 
 
@@ -84,7 +93,7 @@ class IotClient:
         sleep(1)
         roomstatus_iot=self.get_room_status(room_name)
         attempts = 1
-        while(roomstatus_iot.is_valid()==False and attempts<MAX_ATTEMPTS):
+        while(roomstatus_iot.is_valid()==False and attempts<=MAX_ATTEMPTS):
             sleep(RETRY_DELAY_IOT)
             attempts=attempts+1
             roomstatus_iot=self.get_room_status(room_name)

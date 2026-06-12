@@ -46,7 +46,7 @@ def update_if_needed(iotc,room_name,iot_room_status,gcal_room_status):
             #need to update roomstatus in iot
             attempts = 1
             updateok = False
-            while not updateok and attempts<MAX_ATTEMPTS:
+            while not updateok and attempts<=MAX_ATTEMPTS:
                 logger.info(f"Updating room {room_name} in IoTCloud...")
                 iotc.update_room_status(gcal_room_status,iot_room_status)
                 #leave some time for property propagation

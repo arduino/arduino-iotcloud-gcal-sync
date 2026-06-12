@@ -47,7 +47,7 @@ def get_config(storage_client):
 # Function to get the next events from now
 def get_next_events(calendar_client,calendar_id, num_events=10):
     logger.info("Extracting events from calendar "+calendar_id)
-    now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat() # RFC3339 UTC
     events_result = calendar_client.events().list(calendarId=calendar_id, timeMin=now,
                                         maxResults=num_events, singleEvents=True,
                                         orderBy='startTime').execute()
@@ -133,11 +133,14 @@ def handle_webhook():
     logger.info("Webhook Notification Received:")
     props = dict(request.headers)
     logger.info(props)
-    if props["X-Goog-Channel-Id"]!=WATCH_ID:
-        logger.info("Ignoring notification, was for different watchid version "+props["X-Goog-Channel-Id"])
+    channel_id = props.get("X-Goog-Channel-Id","")
+    if channel_id!=WATCH_ID:
+        logger.info("Ignoring notification, was for different watchid version "+channel_id)
         return jsonify({'status': 'success'})
 
-    calendar_uri = props["X-Goog-Resource-Uri"]
+    calendar_uri = props.get("X-Goog-Resource-Uri","")
+    if calendar_uri=="":
+        abort(400,"Missing X-Goog-Resource-Uri header")
     #this is the full URI of the calendar so we need to strip out some parts
     calendar_id = extract_calendar_id(calendar_uri)
     
@@ -187,10 +190,10 @@ def startwatching():
     config = get_config(storage_client)
     rooms=config.get("rooms",[])
     config_client_id=config.get("iot_client_id","")
-    #allow only requests with the same client_id as the one configured
+    #note: the bearer secret is intentionally not validated, the client cannot send it
     if client_id!=config_client_id:
         abort(401,"ERROR - Client not authorized")
-    
+
     calendar_id = ""
     for room in rooms:
         if room.get("room_name","")==room_name:
@@ -209,7 +212,7 @@ def startwatching():
             logger.info("Stopping to watch "+ids["watch_id"]+":"+ids["resource_id"])
             unwatch_calendar(calendar_client,ids["watch_id"],ids["resource_id"])
     except Exception as e:
-        logger.warn("Not able to unwatch calendar "+room_name)
+        logger.warning("Not able to unwatch calendar "+room_name)
 
     #now setup a watch for this calendar
     response = watch_calendar(calendar_client,calendar_id,watch_url)
@@ -239,6 +242,7 @@ def delete_meeting(id):
     config = get_config(storage_client)
     rooms=config.get("rooms",[])
     config_client_id=config.get("iot_client_id","")
+    #note: the bearer secret is intentionally not validated, the client cannot send it
     if client_id!=config_client_id:
         abort(401,"ERROR - Client not authorized")
 
@@ -254,7 +258,7 @@ def delete_meeting(id):
 
     attempts=1
     deletedok=False
-    while deletedok==False and attempts<3:
+    while deletedok==False and attempts<=3:
         deletedok = gcalc.delete_meeting(id)
         attempts = attempts+1
 
@@ -284,6 +288,7 @@ def new_meeting():
     config = get_config(storage_client)
     rooms=config.get("rooms",[])
     config_client_id=config.get("iot_client_id","")
+    #note: the bearer secret is intentionally not validated, the client cannot send it
     if client_id!=config_client_id:
         abort(401,"ERROR - Client not authorized")
 
