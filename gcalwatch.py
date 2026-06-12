@@ -337,5 +337,5 @@ def new_meeting():
 if __name__ == '__main__':
     logger.info("Startup")
     
-    app.run(debug=True)
+    app.run()
  
