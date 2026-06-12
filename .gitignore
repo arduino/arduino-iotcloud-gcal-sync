@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+
+# secrets - never commit
+config.json
+calendar_credentials.json
+arduino_secrets.h

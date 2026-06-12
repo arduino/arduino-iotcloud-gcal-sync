@@ -1,0 +1,35 @@
+{
+  "cpu": {
+    "fqbn": "arduino:mbed_giga:giga",
+    "name": "Arduino MKR WiFi 1010",
+    "type": "serial"
+  },
+  "secrets": [
+    {
+      "name": "SECRET_CLIENT_ID",
+      "value": ""
+    },
+    {
+      "name": "SECRET_OPTIONAL_PASS",
+      "value": ""
+    },
+    {
+      "name": "SECRET_SERVER",
+      "value": ""
+    },
+    {
+      "name": "SECRET_SSID",
+      "value": ""
+    },
+    {
+      "name": "SECRET_TOKEN",
+      "value": ""
+    }
+  ],
+  "included_libs": [
+    {
+      "name": "lvgl",
+      "version": "8.3.11"
+    }
+  ]
+}
