@@ -1,16 +1,7 @@
 name: Deploy gcalwatch to Cloud Run
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'gcalwatch.py'
-      - 'gcalclient.py'
-      - 'roomstatus.py'
-      - 'mylogger.py'
-      - 'requirements.txt'
-      - 'docker/gcalwatch.Dockerfile'
-      - '.github/workflows/deploy-gcalwatch.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:

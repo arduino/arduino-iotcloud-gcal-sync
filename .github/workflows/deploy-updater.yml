@@ -1,19 +1,7 @@
 name: Deploy updater to Compute Engine
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'updater.py'
-      - 'gcalclient.py'
-      - 'iotclient.py'
-      - 'calendarmap.py'
-      - 'receiver_task.py'
-      - 'roomstatus.py'
-      - 'mylogger.py'
-      - 'requirements.txt'
-      - 'docker/updater.Dockerfile'
-      - '.github/workflows/deploy-updater.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
