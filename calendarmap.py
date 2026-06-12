@@ -2,11 +2,6 @@ import json
 from threading import Lock
 
 class CalendarMap:
-    
-    calendars = {}    
-    ids = {}           
-    lock = Lock()
-    wakeup_events=[]
 
     REASON_REGULAR="WAKEUP_REGULAR"
     REASON_CALENDARCHANGE="WAKEUP_CALENDARCHANGE"
@@ -53,8 +48,10 @@ class CalendarMap:
 
 
     def __init__(self):
-         
-         return
+        self.calendars = {}
+        self.ids = {}
+        self.lock = Lock()
+        self.wakeup_events = []
     
 
     def toJSON(self):

@@ -74,9 +74,12 @@ def receiver_task(cm,cond):
                 newdata_cond.notify_all()
         except Exception as e:
             logger.error(e)
-            calendar_map.releaseLock()        
+            calendar_map.releaseLock()
             sleep(5)
-            #try to reconnect in case it was a problem with pubsub
+            try:
+                subscriber.close()
+            except Exception:
+                pass
             subscriber = pubsub_v1.SubscriberClient(credentials=creds)
             subscriber.subscribe(subscription_path, callback=callback)
             logger.info(f"Subscribed to messages from {subscription_path}")

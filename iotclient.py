@@ -51,6 +51,7 @@ class IotClient:
         self.client_id=client_id
         self.client_secret=client_secret
         self.org_id=org_id
+        self._thingid_cache = {}  # room_name -> thingid
 
 
     def get_token(self):
@@ -97,30 +98,33 @@ class IotClient:
         properties_api = propertiesApi.PropertiesV2Api(client)
         room=RoomStatus()
         properties=[]
-        md={}    
+        md={}
         try:
-            things = things_api.things_v2_list()
-            sleep(RETRY_DELAY_IOT)
-            if things.response.status==200:
-                for thing in things.body: 
+            thingid = self._thingid_cache.get(room_name)
+            if thingid is None:
+                things = things_api.things_v2_list()
+                sleep(RETRY_DELAY_IOT)
+                if things.response.status!=200:
+                    logger.error("IoT API returned status "+str(things.response.status))
+                    room.valid=False
+                    return room
+                for thing in things.body:
                     if thing["name"] == room_name:
-                        logger.debug(f"Found thing: {thing}")
-                        room.name=room_name
-                        md["thingid"]=thing["id"]
-                        properties=properties_api.properties_v2_list(path_params={'id': thing["id"]})  
-                room.valid=True
-            else:
-                logger.error("IoT API returned status "+things.response.status)
+                        thingid = thing["id"]
+                        self._thingid_cache[room_name] = thingid
+                        logger.debug(f"Found and cached thingid for {room_name}: {thingid}")
+                        break
+            if thingid is None:
+                logger.info(f"Did not find thing corresponding to room: {room_name}")
                 room.valid=False
+                return room
+            room.name=room_name
+            md["thingid"]=thingid
+            properties=properties_api.properties_v2_list(path_params={'id': thingid})
+            room.valid=True
         except ApiException as e:
-            room.valid=False 
-            logger.error("IOTCLIENT: Exception in get room status: {}".format(e))
-            return room
-
-        if room.name!=room_name:
-            #didn't find any thing with this room name
-            logger.info(f"Did not find thing corresponding to room: {room_name}")
             room.valid=False
+            logger.error("IOTCLIENT: Exception in get room status: {}".format(e))
             return room
 
         #creates cache of property ids
@@ -233,12 +237,16 @@ class IotClient:
             value = newstatus.nextevorganizer
         if (pname == self.PNAME_NEXTEVID):
             value = newstatus.nextevid
-        try:
-            logger.info("UPDATE: "+tid+"/"+pid+"/"+pname+"="+str(value))
-            params = dict()
-            params["id"]=tid
-            params["pid"]=pid
-            properties_api.properties_v2_publish( path_params=params, body={'value':value} )
-            sleep(1)
-        except ApiException as e:
-            logger.error("IOTCLIENT: Error in update_property: {}".format(e))
+        logger.info("UPDATE: "+tid+"/"+pid+"/"+pname+"="+str(value))
+        params = {"id": tid, "pid": pid}
+        attempts = 1
+        while attempts <= MAX_ATTEMPTS:
+            try:
+                properties_api.properties_v2_publish(path_params=params, body={'value': value})
+                sleep(1)
+                return
+            except ApiException as e:
+                logger.error("IOTCLIENT: Error in update_property attempt {}/{}: {}".format(attempts, MAX_ATTEMPTS, e))
+                attempts += 1
+                if attempts <= MAX_ATTEMPTS:
+                    sleep(RETRY_DELAY_IOT)

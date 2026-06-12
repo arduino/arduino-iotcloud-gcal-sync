@@ -30,6 +30,19 @@ app = Flask(__name__)
 
 logger = mylogger.getlogger(__name__)
 
+_config_cache = None
+
+def get_config(storage_client):
+    global _config_cache
+    if _config_cache is not None:
+        return _config_cache
+    bucket = storage_client.bucket(CONFIG_BUCKET_NAME)
+    blob = bucket.blob("config.json")
+    with blob.open("r") as f:
+        _config_cache = json.load(f)
+    logger.info("Config loaded and cached")
+    return _config_cache
+
  
 # Function to get the next events from now
 def get_next_events(calendar_client,calendar_id, num_events=10):
@@ -129,12 +142,7 @@ def handle_webhook():
     calendar_id = extract_calendar_id(calendar_uri)
     
     storage_client = storage.Client(credentials=get_credentials())
-    #retrieve config
-    bucket = storage_client.bucket(CONFIG_BUCKET_NAME)
-    blob = bucket.blob("config.json")
-    with blob.open("r") as f:
-        config = json.load(f)
-    
+    config = get_config(storage_client)
     rooms=config.get("rooms",[])
     room_name=""
     for room in rooms:
@@ -176,14 +184,7 @@ def startwatching():
     creds = get_credentials()
     calendar_client = build('calendar', 'v3',credentials=creds)
     storage_client = storage.Client(credentials=creds)
-    
-    #retrieve config
-    bucket = storage_client.bucket(CONFIG_BUCKET_NAME)
-    blob = bucket.blob("config.json")
-    with blob.open("r") as f:
-        config = json.load(f)
-    
-    
+    config = get_config(storage_client)
     rooms=config.get("rooms",[])
     config_client_id=config.get("iot_client_id","")
     #allow only requests with the same client_id as the one configured
@@ -235,20 +236,9 @@ def delete_meeting(id):
         abort(400,"Required parameters in request body are missing")
     
     storage_client = storage.Client()
-    #retrieve config
-    bucket = storage_client.bucket(CONFIG_BUCKET_NAME)
-    blob = bucket.blob("config.json")
-    with blob.open("r") as f:
-        config = json.load(f)
-    
-    config_client_id=config.get("iot_client_id","")
-    #allow only requests with the same client_id as the one configured
-    if client_id!=config_client_id:
-        abort(401,"ERROR - Client not authorized")
-    
+    config = get_config(storage_client)
     rooms=config.get("rooms",[])
     config_client_id=config.get("iot_client_id","")
-    #allow only requests with the same client_id as the one configured
     if client_id!=config_client_id:
         abort(401,"ERROR - Client not authorized")
 
@@ -291,15 +281,9 @@ def new_meeting():
         abort(400,"Required parameters in request body are missing")
     
     storage_client = storage.Client()
-    #retrieve config
-    bucket = storage_client.bucket(CONFIG_BUCKET_NAME)
-    blob = bucket.blob("config.json")
-    with blob.open("r") as f:
-        config = json.load(f)
-    
+    config = get_config(storage_client)
     rooms=config.get("rooms",[])
     config_client_id=config.get("iot_client_id","")
-    #allow only requests with the same client_id as the one configured
     if client_id!=config_client_id:
         abort(401,"ERROR - Client not authorized")
 

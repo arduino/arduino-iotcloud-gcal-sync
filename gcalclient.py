@@ -33,7 +33,7 @@ class GCalClient:
     def __init__(self,calendarId,room_name):
         self.calendarId=calendarId
         self.room_name=room_name
-        return
+        self._service = None
 
 
     def set_nextev_dates(self,startd,endd,tomorrow,result):
@@ -196,18 +196,19 @@ class GCalClient:
 
 
     def get_gcalclient(self):
+        if self._service is not None:
+            return self._service
         creds,project_id = default(scopes=SCOPES)
         storage_client = storage.Client(credentials=creds)
         bucket = storage_client.bucket(BUCKET_NAME)
         blob = bucket.blob("calendar_credentials.json")
         with blob.open("r") as f:
             info = json.load(f)
-    
         creds = service_account.Credentials.from_service_account_info(info=info)
         creds = creds.with_scopes(scopes=SCOPES)
-        logger.debug("Credentials "+creds.service_account_email) 
-        service = build('calendar', 'v3', credentials=creds)
-        return service
+        logger.debug("Credentials "+creds.service_account_email)
+        self._service = build('calendar', 'v3', credentials=creds)
+        return self._service
 
      
 
