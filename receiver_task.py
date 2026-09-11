@@ -68,13 +68,17 @@ def receiver_task(cm,cond):
             current_time = datetime.now()
             logger.info("SEND wake up REGULAR!")
             calendar_map.acquireLock()
-            calendar_map.pushWakeup(CalendarMap.REASON_REGULAR,"")
-            calendar_map.releaseLock()
+            try:
+                calendar_map.pushWakeup(CalendarMap.REASON_REGULAR,"")
+            finally:
+                calendar_map.releaseLock()
             with newdata_cond:
                 newdata_cond.notify_all()
         except Exception as e:
-            logger.error(e)
-            calendar_map.releaseLock()
+            #do NOT release the lock here: it is almost never held at this point
+            #(errors come from sleep/notify/pubsub), and releasing an unlocked
+            #Lock raises RuntimeError, which would kill this thread silently.
+            logger.error(e, exc_info=True)
             sleep(5)
             try:
                 subscriber.close()
