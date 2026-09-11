@@ -1,8 +1,7 @@
 
 from flask import jsonify
 
-from oauthlib.oauth2 import BackendApplicationClient
-from requests_oauthlib import OAuth2Session
+import requests
 
 import iot_api_client as iot
 from iot_api_client.rest import ApiException
@@ -20,6 +19,10 @@ logger = mylogger.getlogger(__name__)
 
 MAX_ATTEMPTS=3
 RETRY_DELAY_IOT=3  #avoids exceeding API rate limiting
+
+TOKEN_MAX_ATTEMPTS=5      #token endpoint can be transiently rate-limited (429) or down (5xx)
+TOKEN_RETRY_BASE_DELAY=2  #seconds; multiplied by attempt number for linear backoff
+TOKEN_REQUEST_TIMEOUT=15  #seconds; avoids hanging forever on a stalled connection
  
 
 class IotClient:
@@ -62,20 +65,51 @@ class IotClient:
         if self._token is not None and now < self._token_expiry:
             return self._token
         start = time.time()
-        oauth_client = BackendApplicationClient(client_id=self.client_id)
-        oauth = OAuth2Session(client=oauth_client)
-        token = oauth.fetch_token(
-            token_url=self.TOKEN_URL,
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            include_client_id=True,
-            audience=self.HOST
-        )
-        logger.debug("Token retrieval took secs=" +str(time.time()-start))
-        expires_in = token.get("expires_in", 300)
-        self._token = token
-        self._token_expiry = now + expires_in - 30  #30s safety margin
-        return token
+        #fetch directly with requests (instead of oauthlib) so we control retries,
+        #timeouts, and can log the real HTTP status/body when Arduino rejects us.
+        #oauthlib collapses every non-token response into a generic
+        #"(missing_token) Missing access token parameter." which hides the cause.
+        data = {
+            "grant_type": "client_credentials",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "audience": self.HOST,
+        }
+        last_error = None
+        for attempt in range(1, TOKEN_MAX_ATTEMPTS + 1):
+            try:
+                resp = requests.post(
+                    self.TOKEN_URL,
+                    data=data,
+                    headers={"content-type": "application/x-www-form-urlencoded"},
+                    timeout=TOKEN_REQUEST_TIMEOUT,
+                )
+                if resp.status_code == 200:
+                    token = resp.json()
+                    if not token.get("access_token"):
+                        #200 with no token is unexpected; treat as retryable
+                        raise ValueError("token response missing access_token: " + resp.text)
+                    logger.debug("Token retrieval took secs=" + str(time.time() - start))
+                    expires_in = token.get("expires_in", 300)
+                    self._token = token
+                    self._token_expiry = now + expires_in - 30  #30s safety margin
+                    return token
+                #non-200: log the real reason (429 rate-limit, 401 bad key, 5xx outage...)
+                last_error = "HTTP {}: {}".format(resp.status_code, resp.text)
+                logger.error(
+                    "IOTCLIENT: token fetch failed attempt {}/{}: {}".format(
+                        attempt, TOKEN_MAX_ATTEMPTS, last_error))
+                #a 401/403 is a credential problem and won't fix itself by retrying
+                if resp.status_code in (401, 403):
+                    break
+            except (requests.RequestException, ValueError) as e:
+                last_error = str(e)
+                logger.error(
+                    "IOTCLIENT: token fetch error attempt {}/{}: {}".format(
+                        attempt, TOKEN_MAX_ATTEMPTS, last_error))
+            if attempt < TOKEN_MAX_ATTEMPTS:
+                sleep(TOKEN_RETRY_BASE_DELAY * attempt)  #linear backoff
+        raise RuntimeError("Unable to obtain IoT Cloud token: " + str(last_error))
 
 
     def init_client(self,token):

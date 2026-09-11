@@ -120,67 +120,71 @@ def watch_and_update_iot():
     while True:
         try:
             with newdata_cond:
-                # Wait until data is available
-                newdata_cond.wait()
+                # Wait until data is available (timeout so the main thread
+                # wakes on its own even if no notification ever arrives)
+                newdata_cond.wait(timeout=90)
                 cm.acquireLock()
-                # WAKEUP call received from receiver_task, now Process the data
-                #pop out all calls which happened (can be multiple)
-                done_processing = False
-                while not done_processing:
-                    wakeupcall=cm.popWakeup()
-                    if "reason" in wakeupcall:
-                        logger.info("WAKEUP>"+wakeupcall["reason"]+".."+wakeupcall["calendar_name"])
-                        if wakeupcall["reason"]==cm.REASON_CALENDARCHANGE:
-                            #process calendar based on already received events
-                            room_name = wakeupcall["calendar_name"]
-                            calendar_client=GCalClient(calendar_id,room_name)
-                            events = cm.getCalendar(room_name)
-                            gcal_room_status = calendar_client.get_calendar_status_from_events(events)
-                            logger.debug(gcal_room_status)
-                            iot_room_status = iotc.get_room_status_retry(room_name)
-                            logger.debug(iot_room_status)
-                            if not iot_room_status.is_valid():
-                                logger.error("Could not retrieve valid iotcloud status for room "+room_name)
-                            else:
-                                #all valid, check for update
-                                update_if_needed(iotc,room_name,iot_room_status,gcal_room_status)
-                            
-                        
-                        if wakeupcall["reason"]==cm.REASON_REGULAR:
-                            #if we are at min 55 of the hour, to be sure about sync, re-downloads events from calendar
-                            current_time = datetime.now()
-                            current_mins = current_time.minute
-                            if current_mins==55:
-                                logger.info("Downloading room calendars for extra sync before hour end")
-                                for room_name in room_names:
-                                    calendar_client=GCalClient(cm.getCalendarId(room_name),room_name)
-                                    events = calendar_client.get_next_events()                        
-                                    cm.setCalendar(room_name,events)
-
-
-                            #process all calendars to see if since the time is different there is a different status
-                            for room_name in room_names:
-                                calendar_client=GCalClient(cm.getCalendarId(room_name),room_name)
+                try:
+                    # WAKEUP call received from receiver_task, now Process the data
+                    #pop out all calls which happened (can be multiple)
+                    done_processing = False
+                    while not done_processing:
+                        wakeupcall=cm.popWakeup()
+                        if "reason" in wakeupcall:
+                            logger.info("WAKEUP>"+wakeupcall["reason"]+".."+wakeupcall["calendar_name"])
+                            if wakeupcall["reason"]==cm.REASON_CALENDARCHANGE:
+                                #process calendar based on already received events
+                                room_name = wakeupcall["calendar_name"]
+                                calendar_client=GCalClient(calendar_id,room_name)
                                 events = cm.getCalendar(room_name)
                                 gcal_room_status = calendar_client.get_calendar_status_from_events(events)
                                 logger.debug(gcal_room_status)
                                 iot_room_status = iotc.get_room_status_retry(room_name)
                                 logger.debug(iot_room_status)
-                                if not gcal_room_status.is_valid():
-                                    logger.error("Could not retrieve valid calendar status for room "+room_name)
-                                elif not iot_room_status.is_valid():
+                                if not iot_room_status.is_valid():
                                     logger.error("Could not retrieve valid iotcloud status for room "+room_name)
                                 else:
                                     #all valid, check for update
                                     update_if_needed(iotc,room_name,iot_room_status,gcal_room_status)
-                    else :
-                        done_processing=True
-                cm.releaseLock()
-                
+
+
+                            if wakeupcall["reason"]==cm.REASON_REGULAR:
+                                #if we are at min 55 of the hour, to be sure about sync, re-downloads events from calendar
+                                current_time = datetime.now()
+                                current_mins = current_time.minute
+                                if current_mins==55:
+                                    logger.info("Downloading room calendars for extra sync before hour end")
+                                    for room_name in room_names:
+                                        calendar_client=GCalClient(cm.getCalendarId(room_name),room_name)
+                                        events = calendar_client.get_next_events()
+                                        cm.setCalendar(room_name,events)
+
+
+                                #process all calendars to see if since the time is different there is a different status
+                                for room_name in room_names:
+                                    calendar_client=GCalClient(cm.getCalendarId(room_name),room_name)
+                                    events = cm.getCalendar(room_name)
+                                    gcal_room_status = calendar_client.get_calendar_status_from_events(events)
+                                    logger.debug(gcal_room_status)
+                                    iot_room_status = iotc.get_room_status_retry(room_name)
+                                    logger.debug(iot_room_status)
+                                    if not gcal_room_status.is_valid():
+                                        logger.error("Could not retrieve valid calendar status for room "+room_name)
+                                    elif not iot_room_status.is_valid():
+                                        logger.error("Could not retrieve valid iotcloud status for room "+room_name)
+                                    else:
+                                        #all valid, check for update
+                                        update_if_needed(iotc,room_name,iot_room_status,gcal_room_status)
+                        else :
+                            done_processing=True
+                finally:
+                    cm.releaseLock()
+
         except Exception as e:
-            logger.error(e)
-            cm.releaseLock()
-            sleep(60) #try to see if with a delay it can be retried
+            logger.error(e, exc_info=True)
+            #NOTE: no sleep here — sleeping outside the condition drops any
+            #notify_all() that arrives during the sleep. The wait(timeout) above
+            #already paces retries.
  
 
 if __name__ == '__main__':
