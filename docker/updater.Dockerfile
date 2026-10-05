@@ -1,6 +1,9 @@
 # Use the official lightweight Python image.
 # https://hub.docker.com/_/python
-FROM python:3.13-slim
+# Pin an explicit patch release (not the floating 3.13-slim tag) so the bundled
+# CPython interpreter is reproducible and image scanning can't flag an outdated
+# interpreter CVE on a stale build. Bump this when a newer 3.13.x ships.
+FROM python:3.13.16-slim
 
 # Apply Debian security updates to the base image so OS-package CVEs flagged by
 # image scanning (e.g. CVE-2026-48962 in perl-base, CVE-2026-5450 in libc6/
