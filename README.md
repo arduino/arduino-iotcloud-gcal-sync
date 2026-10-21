@@ -8,14 +8,18 @@ Pre-requisites in Arduino IoTCloud:
 * for each room named "room_name" listed configuration, there has to be a corresponding Thing in Arduino IoTCloud with Thing name = room_name
 * the Thing in IoTCloud is prepared upfront with the following variables:
    * busynow (integer) = 0 if the room is currently free, 1 if the room is currently busy
-   * curevmtg (string) = "current event meeting" = description of the meeting in progress, or a sentence like "free until..." if no meeting in progress
+   * curevmsg (string) = "current event message" = description of the meeting in progress, or a sentence like "free until..." if no meeting in progress
    * curevstart (string) = start time of current meeting if any
    * curevend (string) = end time of current meeting if any
    * curevtm (string) = summary indication of time interval (e.g. 15:00-18:00) of current meeting if any
-   * nextevmtg (string) = "next event meeting" = description of the next upcoming meeting in this room, if any
+   * curevorganizer (string) = email of the organizer of the current meeting if any
+   * curevid (string) = Google Calendar event id of the current meeting if any
+   * nextevmsg (string) = "next event message" = description of the next upcoming meeting in this room, if any
    * nextevstart (string) = start time of next meeting if any
    * nextevend (string) = end time of next meeting if any
    * nextevtm (string) = summary indication of time interval (e.g. 15:00-18:00) of next meeting if any
+   * nextevorganizer (string) = email of the organizer of the next meeting if any
+   * nextevid (string) = Google Calendar event id of the next meeting if any
 
 ## How it works
 
