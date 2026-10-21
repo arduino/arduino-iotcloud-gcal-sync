@@ -1,10 +1,10 @@
 Flask~=3.1.0
-gunicorn~=23.0.0
-requests-oauthlib
+gunicorn~=26.2
+requests
 arduino-iot-client~=2.0.1
 google-api-python-client
+google-auth
 google-auth-httplib2
-google-auth-oauthlib
 google-cloud-storage
 frozendict~=2.4.0
 typing_extensions
